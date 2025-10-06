@@ -12,7 +12,7 @@ class ChessPuzzleSimulator {
         
         // User stats
         this.userStats = {
-            elo: 1200,
+            elo: 0,
             points: 0,
             streak: 0,
             puzzlesSolved: 0,
@@ -27,24 +27,36 @@ class ChessPuzzleSimulator {
     }
     
     init() {
-        this.initBoard();
-        this.loadPuzzle();
-        this.startTimer();
-        this.updateUI();
-        this.setupEventListeners();
+        // Wait for chessboard.js to load
+        setTimeout(() => {
+            this.initBoard();
+            this.loadPuzzle();
+            this.startTimer();
+            this.updateUI();
+            this.setupEventListeners();
+        }, 100);
     }
     
     initBoard() {
-        const config = {
-            draggable: true,
-            position: 'start',
-            onDragStart: this.onDragStart.bind(this),
-            onDrop: this.onDrop.bind(this),
-            onSnapEnd: this.onSnapEnd.bind(this),
-            pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png'
-        };
-        
-        this.board = Chessboard('chessboard', config);
+        try {
+            const config = {
+                draggable: true,
+                position: 'start',
+                onDragStart: this.onDragStart.bind(this),
+                onDrop: this.onDrop.bind(this),
+                onSnapEnd: this.onSnapEnd.bind(this),
+                pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png'
+            };
+            
+            this.board = Chessboard('chessboard', config);
+            console.log('Chessboard initialized successfully');
+        } catch (error) {
+            console.error('Error initializing chessboard:', error);
+            // Fallback: try again after a delay
+            setTimeout(() => {
+                this.initBoard();
+            }, 500);
+        }
     }
     
     setupEventListeners() {
@@ -145,7 +157,11 @@ class ChessPuzzleSimulator {
         
         // Set up the position
         this.game.load(this.currentPuzzle.fen);
-        this.board.position(this.currentPuzzle.fen);
+        
+        // Update board position if board is initialized
+        if (this.board) {
+            this.board.position(this.currentPuzzle.fen);
+        }
         
         // Update UI
         document.getElementById('puzzleTitle').textContent = this.currentPuzzle.title;
@@ -348,10 +364,18 @@ class ChessPuzzleSimulator {
     }
     
     startTimer() {
+        // Clear any existing timer
+        if (this.timer) {
+            clearInterval(this.timer);
+        }
+        
         this.timer = setInterval(() => {
             if (this.startTime) {
                 const elapsed = Date.now() - this.startTime;
-                document.getElementById('timer').textContent = this.formatTime(Math.floor(elapsed / 1000));
+                const timerElement = document.getElementById('timer');
+                if (timerElement) {
+                    timerElement.textContent = this.formatTime(Math.floor(elapsed / 1000));
+                }
             }
         }, 1000);
     }
@@ -461,5 +485,8 @@ function nextPuzzle() {
 
 // Initialize the application when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    window.puzzleSimulator = new ChessPuzzleSimulator();
+    // Wait a bit more to ensure all libraries are loaded
+    setTimeout(() => {
+        window.puzzleSimulator = new ChessPuzzleSimulator();
+    }, 200);
 });
