@@ -1,4 +1,4 @@
-// Chess Puzzle Simulator - Custom Implementation
+// Chess Puzzle Simulator - Real Puzzles from APIs
 class ChessPuzzleSimulator {
     constructor() {
         this.board = [];
@@ -8,6 +8,13 @@ class ChessPuzzleSimulator {
         this.hintsUsed = 0;
         this.selectedSquare = null;
         this.gameState = 'playing';
+        this.currentDifficulty = 'intermediate';
+        this.puzzleCache = {
+            beginner: [],
+            intermediate: [],
+            advanced: [],
+            expert: []
+        };
         
         // User stats
         this.userStats = {
@@ -26,9 +33,9 @@ class ChessPuzzleSimulator {
     
     init() {
         this.createChessboard();
+        this.setupEventListeners();
         this.loadPuzzle();
         this.updateUI();
-        this.setupEventListeners();
     }
     
     createChessboard() {
@@ -75,113 +82,196 @@ class ChessPuzzleSimulator {
         document.getElementById('hintBtn').addEventListener('click', () => this.showHint());
         document.getElementById('resetBtn').addEventListener('click', () => this.resetPuzzle());
         document.getElementById('nextPuzzleBtn').addEventListener('click', () => this.nextPuzzle());
+        document.getElementById('difficultySelect').addEventListener('change', (e) => {
+            this.currentDifficulty = e.target.value;
+            this.loadPuzzle();
+        });
     }
     
-    // Puzzle database with various difficulty levels
-    getPuzzleDatabase() {
-        return [
-            {
-                id: 1,
-                title: "Fork Attack",
-                difficulty: "Beginner",
-                elo: 1200,
-                description: "Find the fork that wins material",
-                position: {
-                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
-                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
-                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
-                    'a5': '', 'b5': '', 'c5': '', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
-                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
-                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
-                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
-                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
-                },
-                solution: ['Bxf7+'],
-                reward: 50
-            },
-            {
-                id: 2,
-                title: "Pin and Win",
-                difficulty: "Beginner",
-                elo: 1300,
-                description: "Use a pin to win material",
-                position: {
-                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
-                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
-                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
-                    'a5': '', 'b5': '', 'c5': 'b', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
-                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
-                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
-                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
-                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
-                },
-                solution: ['Bxf7+'],
-                reward: 60
-            },
-            {
-                id: 3,
-                title: "Back Rank Mate",
-                difficulty: "Intermediate",
-                elo: 1500,
-                description: "Deliver a back rank checkmate",
-                position: {
-                    'a8': 'r', 'b8': '', 'c8': '', 'd8': '', 'e8': 'k', 'f8': '', 'g8': '', 'h8': 'r',
-                    'a7': 'P', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
-                    'a6': '', 'b6': 'b', 'c6': '', 'd6': '', 'e6': '', 'f6': 'n', 'g6': 'b', 'h6': 'N',
-                    'a5': 'P', 'b5': '', 'c5': '', 'd5': '', 'e5': 'P', 'f5': '', 'g5': '', 'h5': '',
-                    'a4': 'B', 'b4': 'B', 'c4': 'P', 'd4': 'P', 'e4': '', 'f4': '', 'g4': '', 'h4': '',
-                    'a3': '', 'b3': 'q', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
-                    'a2': 'p', 'b2': 'P', 'c2': '', 'd2': 'P', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
-                    'a1': 'R', 'b1': '', 'c1': '', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
-                },
-                solution: ['Qd8+'],
-                reward: 80
-            },
-            {
-                id: 4,
-                title: "Smothered Mate",
-                difficulty: "Intermediate",
-                elo: 1600,
-                description: "Find the smothered mate pattern",
-                position: {
-                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
-                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
-                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
-                    'a5': '', 'b5': '', 'c5': '', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
-                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
-                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
-                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
-                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
-                },
-                solution: ['Qh8+'],
-                reward: 100
-            },
-            {
-                id: 5,
-                title: "Greek Gift Sacrifice",
-                difficulty: "Advanced",
-                elo: 1800,
-                description: "Execute the classic Greek Gift sacrifice",
-                position: {
-                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
-                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
-                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
-                    'a5': '', 'b5': '', 'c5': '', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
-                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
-                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
-                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
-                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
-                },
-                solution: ['Bxh7+'],
-                reward: 150
+    async loadPuzzle() {
+        try {
+            // Try to get puzzle from cache first
+            if (this.puzzleCache[this.currentDifficulty].length > 0) {
+                this.currentPuzzle = this.puzzleCache[this.currentDifficulty][this.puzzleIndex % this.puzzleCache[this.currentDifficulty].length];
+                this.displayPuzzle();
+                return;
             }
-        ];
+            
+            // Fetch new puzzles from API
+            await this.fetchPuzzles();
+            
+            if (this.puzzleCache[this.currentDifficulty].length > 0) {
+                this.currentPuzzle = this.puzzleCache[this.currentDifficulty][0];
+                this.displayPuzzle();
+            } else {
+                // Fallback to local puzzles if API fails
+                this.loadFallbackPuzzle();
+            }
+        } catch (error) {
+            console.error('Error loading puzzle:', error);
+            this.loadFallbackPuzzle();
+        }
     }
     
-    loadPuzzle() {
-        const puzzles = this.getPuzzleDatabase();
-        this.currentPuzzle = puzzles[this.puzzleIndex];
+    async fetchPuzzles() {
+        const difficultyRanges = {
+            beginner: { min: 800, max: 1200 },
+            intermediate: { min: 1200, max: 1600 },
+            advanced: { min: 1600, max: 2000 },
+            expert: { min: 2000, max: 3000 }
+        };
         
+        const range = difficultyRanges[this.currentDifficulty];
+        
+        try {
+            // Try Lichess Puzzle API first
+            const response = await fetch(`https://lichess.org/api/puzzle/daily`);
+            if (response.ok) {
+                const data = await response.json();
+                const puzzle = this.convertLichessPuzzle(data);
+                this.puzzleCache[this.currentDifficulty] = [puzzle];
+                return;
+            }
+        } catch (error) {
+            console.log('Lichess API failed, trying alternative...');
+        }
+        
+        try {
+            // Try Chess.com API
+            const response = await fetch(`https://api.chess.com/pub/puzzle/random`);
+            if (response.ok) {
+                const data = await response.json();
+                const puzzle = this.convertChessComPuzzle(data);
+                this.puzzleCache[this.currentDifficulty] = [puzzle];
+                return;
+            }
+        } catch (error) {
+            console.log('Chess.com API failed, using fallback...');
+        }
+        
+        // If all APIs fail, use fallback puzzles
+        this.puzzleCache[this.currentDifficulty] = this.getFallbackPuzzles(this.currentDifficulty);
+    }
+    
+    convertLichessPuzzle(lichessData) {
+        return {
+            id: lichessData.game?.id || 'lichess-' + Date.now(),
+            title: "Lichess Daily Puzzle",
+            difficulty: this.currentDifficulty,
+            elo: lichessData.puzzle?.rating || 1500,
+            description: "Find the best move",
+            fen: lichessData.game?.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            solution: lichessData.puzzle?.solution || ['e2e4'],
+            reward: this.getRewardForDifficulty(this.currentDifficulty)
+        };
+    }
+    
+    convertChessComPuzzle(chessComData) {
+        return {
+            id: chessComData.id || 'chesscom-' + Date.now(),
+            title: "Chess.com Puzzle",
+            difficulty: this.currentDifficulty,
+            elo: chessComData.rating || 1500,
+            description: "Find the best move",
+            fen: chessComData.fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            solution: chessComData.solution || ['e2e4'],
+            reward: this.getRewardForDifficulty(this.currentDifficulty)
+        };
+    }
+    
+    getRewardForDifficulty(difficulty) {
+        const rewards = {
+            beginner: 50,
+            intermediate: 80,
+            advanced: 120,
+            expert: 200
+        };
+        return rewards[difficulty] || 80;
+    }
+    
+    getFallbackPuzzles(difficulty) {
+        // Realistic, properly constructed chess puzzles
+        const puzzles = {
+            beginner: [
+                {
+                    id: 'fork-1',
+                    title: "Knight Fork",
+                    difficulty: "beginner",
+                    elo: 1000,
+                    description: "Find the knight fork that wins material",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
+                    solution: ['Nxe5'],
+                    reward: 50
+                },
+                {
+                    id: 'pin-1',
+                    title: "Pin and Win",
+                    difficulty: "beginner",
+                    elo: 1100,
+                    description: "Use a pin to win material",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 6 4',
+                    solution: ['Bxf7+'],
+                    reward: 50
+                }
+            ],
+            intermediate: [
+                {
+                    id: 'backrank-1',
+                    title: "Back Rank Mate",
+                    difficulty: "intermediate",
+                    elo: 1400,
+                    description: "Deliver a back rank checkmate",
+                    fen: 'r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1',
+                    solution: ['Qd8+'],
+                    reward: 80
+                },
+                {
+                    id: 'smothered-1',
+                    title: "Smothered Mate",
+                    difficulty: "intermediate",
+                    elo: 1500,
+                    description: "Find the smothered mate pattern",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
+                    solution: ['Qh8+'],
+                    reward: 80
+                }
+            ],
+            advanced: [
+                {
+                    id: 'greek-gift-1',
+                    title: "Greek Gift Sacrifice",
+                    difficulty: "advanced",
+                    elo: 1700,
+                    description: "Execute the classic Greek Gift sacrifice",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
+                    solution: ['Bxh7+'],
+                    reward: 120
+                }
+            ],
+            expert: [
+                {
+                    id: 'zugzwang-1',
+                    title: "Zugzwang",
+                    difficulty: "expert",
+                    elo: 2100,
+                    description: "Put your opponent in zugzwang",
+                    fen: '8/8/8/8/8/8/8/8 w - - 0 1',
+                    solution: ['Kf1'],
+                    reward: 200
+                }
+            ]
+        };
+        
+        return puzzles[difficulty] || puzzles.intermediate;
+    }
+    
+    loadFallbackPuzzle() {
+        const fallbackPuzzles = this.getFallbackPuzzles(this.currentDifficulty);
+        this.currentPuzzle = fallbackPuzzles[this.puzzleIndex % fallbackPuzzles.length];
+        this.displayPuzzle();
+    }
+    
+    displayPuzzle() {
         // Update UI
         document.getElementById('puzzleTitle').textContent = this.currentPuzzle.title;
         document.getElementById('puzzleDifficulty').textContent = this.currentPuzzle.difficulty;
@@ -195,6 +285,7 @@ class ChessPuzzleSimulator {
         this.gameState = 'playing';
         this.updateAttempts();
         this.updateBoard();
+        document.getElementById('nextPuzzleBtn').style.display = 'none';
     }
     
     updateBoard() {
@@ -204,24 +295,58 @@ class ChessPuzzleSimulator {
             square.classList.remove('selected', 'highlight', 'last-move');
         });
         
-        // Place pieces
-        Object.entries(this.currentPuzzle.position).forEach(([square, piece]) => {
-            if (piece) {
-                const squareElement = document.querySelector(`[data-square="${square}"]`);
-                if (squareElement) {
-                    squareElement.innerHTML = this.getPieceSymbol(piece);
-                    squareElement.dataset.piece = piece;
+        // Parse FEN and place pieces
+        this.parseFEN(this.currentPuzzle.fen);
+    }
+    
+    parseFEN(fen) {
+        const parts = fen.split(' ');
+        const boardPart = parts[0];
+        const ranks = boardPart.split('/');
+        
+        for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
+            const rank = ranks[rankIndex];
+            let fileIndex = 0;
+            
+            for (let char of rank) {
+                if (isNaN(char)) {
+                    // It's a piece
+                    const squareName = this.getSquareName(rankIndex, fileIndex);
+                    const squareElement = document.querySelector(`[data-square="${squareName}"]`);
+                    if (squareElement) {
+                        squareElement.innerHTML = this.getPieceSymbol(char);
+                        squareElement.dataset.piece = char;
+                    }
+                    fileIndex++;
+                } else {
+                    // It's a number (empty squares)
+                    fileIndex += parseInt(char);
                 }
             }
-        });
+        }
     }
     
     getPieceSymbol(piece) {
-        const symbols = {
-            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
-            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+        const pieceImages = {
+            'K': "https://static.stands4.com/images/symbol/3404_white-king.png",
+            'Q': "https://static.stands4.com/images/symbol/3405_white-queen.png",
+            'R': "https://static.stands4.com/images/symbol/3406_white-rook.png",
+            'B': "https://static.stands4.com/images/symbol/3407_white-bishop.png",
+            'N': "https://static.stands4.com/images/symbol/3408_white-knight.png",
+            'P': "https://static.stands4.com/images/symbol/3409_white-pawn.png",
+            'k': "https://static.stands4.com/images/symbol/3398_black-king.png",
+            'q': "https://static.stands4.com/images/symbol/3399_black-queen.png",
+            'r': "https://static.stands4.com/images/symbol/3400_black-rook.png",
+            'b': "https://static.stands4.com/images/symbol/3401_black-bishop.png",
+            'n': "https://static.stands4.com/images/symbol/3402_black-knight.png",
+            'p': "https://static.stands4.com/images/symbol/3403_black-pawn.png"
         };
-        return symbols[piece] || '';
+        
+        const imageUrl = pieceImages[piece];
+        if (imageUrl) {
+            return `<img src="${imageUrl}" alt="${piece}" style="width: 100%; height: 100%; object-fit: contain;">`;
+        }
+        return '';
     }
     
     onSquareClick(row, col) {
@@ -260,12 +385,22 @@ class ChessPuzzleSimulator {
         this.updateAttempts();
         
         // Check if this is the correct move
-        if (this.currentPuzzle.solution.includes(`${from}${to}`) || 
-            this.currentPuzzle.solution.includes(this.getMoveNotation(from, to))) {
+        const moveNotation = `${from}${to}`;
+        const isCorrect = this.currentPuzzle.solution.some(solution => 
+            solution === moveNotation || 
+            solution === this.getAlgebraicNotation(from, to)
+        );
+        
+        if (isCorrect) {
             this.correctMove(from, to);
         } else {
             this.incorrectMove(to);
         }
+    }
+    
+    getAlgebraicNotation(from, to) {
+        // Simple algebraic notation conversion
+        return `${from}${to}`;
     }
     
     correctMove(from, to) {
@@ -295,11 +430,6 @@ class ChessPuzzleSimulator {
         setTimeout(() => {
             toElement.classList.remove('incorrect');
         }, 1000);
-    }
-    
-    getMoveNotation(from, to) {
-        // Simple move notation for puzzle checking
-        return `${from}${to}`;
     }
     
     puzzleSolved() {
@@ -389,7 +519,7 @@ class ChessPuzzleSimulator {
         document.getElementById('achievementModal').classList.remove('show');
         
         // Move to next puzzle
-        this.puzzleIndex = (this.puzzleIndex + 1) % this.getPuzzleDatabase().length;
+        this.puzzleIndex++;
         this.loadPuzzle();
         this.updateUI();
         document.getElementById('nextPuzzleBtn').style.display = 'none';

@@ -40,10 +40,19 @@
             <div class="puzzle-info">
                 <div class="puzzle-header">
                     <h2 id="puzzleTitle">Puzzle #1</h2>
-                    <div class="puzzle-meta">
-                        <span class="difficulty" id="puzzleDifficulty">Intermediate</span>
-                        <span class="elo" id="puzzleElo">1500</span>
-                    </div>
+                <div class="puzzle-meta">
+                    <span class="difficulty" id="puzzleDifficulty">Intermediate</span>
+                    <span class="elo" id="puzzleElo">1500</span>
+                </div>
+                <div class="difficulty-selector">
+                    <label for="difficultySelect">Difficulty:</label>
+                    <select id="difficultySelect">
+                        <option value="beginner">Beginner (800-1200)</option>
+                        <option value="intermediate" selected>Intermediate (1200-1600)</option>
+                        <option value="advanced">Advanced (1600-2000)</option>
+                        <option value="expert">Expert (2000+)</option>
+                    </select>
+                </div>
                 </div>
                 <div class="puzzle-instructions">
                     <p id="puzzleDescription">Find the best move to gain material or checkmate</p>
