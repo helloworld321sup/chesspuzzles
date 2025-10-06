@@ -1,22 +1,20 @@
-// Chess Puzzle Simulator
+// Chess Puzzle Simulator - Custom Implementation
 class ChessPuzzleSimulator {
     constructor() {
-        this.board = null;
-        this.game = new Chess();
+        this.board = [];
         this.currentPuzzle = null;
         this.puzzleIndex = 0;
-        this.startTime = null;
-        this.timer = null;
         this.attempts = 0;
         this.hintsUsed = 0;
+        this.selectedSquare = null;
+        this.gameState = 'playing';
         
         // User stats
         this.userStats = {
             elo: 0,
             points: 0,
             streak: 0,
-            puzzlesSolved: 0,
-            totalTime: 0
+            puzzlesSolved: 0
         };
         
         // Load saved stats
@@ -27,36 +25,50 @@ class ChessPuzzleSimulator {
     }
     
     init() {
-        // Wait for chessboard.js to load
-        setTimeout(() => {
-            this.initBoard();
-            this.loadPuzzle();
-            this.startTimer();
-            this.updateUI();
-            this.setupEventListeners();
-        }, 100);
+        this.createChessboard();
+        this.loadPuzzle();
+        this.updateUI();
+        this.setupEventListeners();
     }
     
-    initBoard() {
-        try {
-            const config = {
-                draggable: true,
-                position: 'start',
-                onDragStart: this.onDragStart.bind(this),
-                onDrop: this.onDrop.bind(this),
-                onSnapEnd: this.onSnapEnd.bind(this),
-                pieceTheme: 'https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/img/chesspieces/wikipedia/{piece}.png'
-            };
-            
-            this.board = Chessboard('chessboard', config);
-            console.log('Chessboard initialized successfully');
-        } catch (error) {
-            console.error('Error initializing chessboard:', error);
-            // Fallback: try again after a delay
-            setTimeout(() => {
-                this.initBoard();
-            }, 500);
+    createChessboard() {
+        const boardElement = document.getElementById('chessboard');
+        boardElement.innerHTML = '';
+        
+        // Create 8x8 grid
+        for (let row = 0; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+                const square = document.createElement('div');
+                square.className = 'square';
+                square.dataset.row = row;
+                square.dataset.col = col;
+                square.dataset.square = this.getSquareName(row, col);
+                
+                // Alternate colors
+                if ((row + col) % 2 === 0) {
+                    square.classList.add('light');
+                } else {
+                    square.classList.add('dark');
+                }
+                
+                square.addEventListener('click', () => this.onSquareClick(row, col));
+                boardElement.appendChild(square);
+            }
         }
+    }
+    
+    getSquareName(row, col) {
+        const files = 'abcdefgh';
+        const ranks = '87654321';
+        return files[col] + ranks[row];
+    }
+    
+    getSquareFromName(squareName) {
+        const files = 'abcdefgh';
+        const ranks = '87654321';
+        const col = files.indexOf(squareName[0]);
+        const row = ranks.indexOf(squareName[1]);
+        return { row, col };
     }
     
     setupEventListeners() {
@@ -74,8 +86,17 @@ class ChessPuzzleSimulator {
                 difficulty: "Beginner",
                 elo: 1200,
                 description: "Find the fork that wins material",
-                fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4",
-                solution: ["Bxf7+", "Kxf7", "Ng5+"],
+                position: {
+                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
+                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
+                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
+                    'a5': '', 'b5': '', 'c5': '', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
+                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
+                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
+                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
+                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
+                },
+                solution: ['Bxf7+'],
                 reward: 50
             },
             {
@@ -84,8 +105,17 @@ class ChessPuzzleSimulator {
                 difficulty: "Beginner",
                 elo: 1300,
                 description: "Use a pin to win material",
-                fen: "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 6 4",
-                solution: ["Bxf7+", "Kxf7", "Ng5+"],
+                position: {
+                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
+                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
+                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
+                    'a5': '', 'b5': '', 'c5': 'b', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
+                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
+                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
+                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
+                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
+                },
+                solution: ['Bxf7+'],
                 reward: 60
             },
             {
@@ -94,8 +124,17 @@ class ChessPuzzleSimulator {
                 difficulty: "Intermediate",
                 elo: 1500,
                 description: "Deliver a back rank checkmate",
-                fen: "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",
-                solution: ["Qd8+", "Rxd8", "Rxd8#"],
+                position: {
+                    'a8': 'r', 'b8': '', 'c8': '', 'd8': '', 'e8': 'k', 'f8': '', 'g8': '', 'h8': 'r',
+                    'a7': 'P', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
+                    'a6': '', 'b6': 'b', 'c6': '', 'd6': '', 'e6': '', 'f6': 'n', 'g6': 'b', 'h6': 'N',
+                    'a5': 'P', 'b5': '', 'c5': '', 'd5': '', 'e5': 'P', 'f5': '', 'g5': '', 'h5': '',
+                    'a4': 'B', 'b4': 'B', 'c4': 'P', 'd4': 'P', 'e4': '', 'f4': '', 'g4': '', 'h4': '',
+                    'a3': '', 'b3': 'q', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
+                    'a2': 'p', 'b2': 'P', 'c2': '', 'd2': 'P', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
+                    'a1': 'R', 'b1': '', 'c1': '', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
+                },
+                solution: ['Qd8+'],
                 reward: 80
             },
             {
@@ -104,8 +143,17 @@ class ChessPuzzleSimulator {
                 difficulty: "Intermediate",
                 elo: 1600,
                 description: "Find the smothered mate pattern",
-                fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4",
-                solution: ["Qh8+", "Kxh8", "Nf7#"],
+                position: {
+                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
+                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
+                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
+                    'a5': '', 'b5': '', 'c5': '', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
+                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
+                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
+                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
+                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
+                },
+                solution: ['Qh8+'],
                 reward: 100
             },
             {
@@ -114,39 +162,18 @@ class ChessPuzzleSimulator {
                 difficulty: "Advanced",
                 elo: 1800,
                 description: "Execute the classic Greek Gift sacrifice",
-                fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4",
-                solution: ["Bxh7+", "Kxh7", "Ng5+", "Kg8", "Qh5"],
+                position: {
+                    'a8': 'r', 'b8': 'n', 'c8': 'b', 'd8': 'q', 'e8': 'k', 'f8': 'b', 'g8': 'n', 'h8': 'r',
+                    'a7': 'p', 'b7': 'p', 'c7': 'p', 'd7': 'p', 'e7': 'p', 'f7': 'p', 'g7': 'p', 'h7': 'p',
+                    'a6': '', 'b6': '', 'c6': 'n', 'd6': '', 'e6': '', 'f6': 'n', 'g6': '', 'h6': '',
+                    'a5': '', 'b5': '', 'c5': '', 'd5': '', 'e5': 'p', 'f5': '', 'g5': '', 'h5': '',
+                    'a4': '', 'b4': '', 'c4': 'B', 'd4': '', 'e4': 'P', 'f4': '', 'g4': '', 'h4': '',
+                    'a3': '', 'b3': '', 'c3': '', 'd3': 'P', 'e3': '', 'f3': 'N', 'g3': '', 'h3': '',
+                    'a2': 'P', 'b2': 'P', 'c2': 'P', 'd2': '', 'e2': 'P', 'f2': 'P', 'g2': 'P', 'h2': 'P',
+                    'a1': 'R', 'b1': 'N', 'c1': 'B', 'd1': 'Q', 'e1': 'K', 'f1': '', 'g1': '', 'h1': 'R'
+                },
+                solution: ['Bxh7+'],
                 reward: 150
-            },
-            {
-                id: 6,
-                title: "Windmill Attack",
-                difficulty: "Advanced",
-                elo: 1900,
-                description: "Create a windmill to win material",
-                fen: "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4",
-                solution: ["Bxf7+", "Kxf7", "Ng5+", "Kg8", "Qh5", "h6", "Qf7+"],
-                reward: 200
-            },
-            {
-                id: 7,
-                title: "Zugzwang Masterpiece",
-                difficulty: "Expert",
-                elo: 2200,
-                description: "Put your opponent in zugzwang",
-                fen: "8/8/8/8/8/8/8/8 w - - 0 1",
-                solution: ["Kf1", "Ke8", "Ke2", "Kd8", "Kd3", "Kc8", "Kc4", "Kb8", "Kb5", "Ka8", "Ka6", "Kb8", "Kb6", "Ka8", "Kc7"],
-                reward: 300
-            },
-            {
-                id: 8,
-                title: "Endgame Precision",
-                difficulty: "Expert",
-                elo: 2300,
-                description: "Navigate a complex endgame",
-                fen: "8/8/8/8/8/8/8/8 w - - 0 1",
-                solution: ["Kf1", "Ke8", "Ke2", "Kd8", "Kd3", "Kc8", "Kc4", "Kb8", "Kb5", "Ka8", "Ka6", "Kb8", "Kb6", "Ka8", "Kc7"],
-                reward: 350
             }
         ];
     }
@@ -154,14 +181,6 @@ class ChessPuzzleSimulator {
     loadPuzzle() {
         const puzzles = this.getPuzzleDatabase();
         this.currentPuzzle = puzzles[this.puzzleIndex];
-        
-        // Set up the position
-        this.game.load(this.currentPuzzle.fen);
-        
-        // Update board position if board is initialized
-        if (this.board) {
-            this.board.position(this.currentPuzzle.fen);
-        }
         
         // Update UI
         document.getElementById('puzzleTitle').textContent = this.currentPuzzle.title;
@@ -172,155 +191,166 @@ class ChessPuzzleSimulator {
         // Reset puzzle state
         this.attempts = 0;
         this.hintsUsed = 0;
-        this.startTime = Date.now();
+        this.selectedSquare = null;
+        this.gameState = 'playing';
         this.updateAttempts();
-        this.resetTimer();
+        this.updateBoard();
     }
     
-    onDragStart(source, piece, position, orientation) {
-        // Only allow moves for the side to move
-        if (this.game.turn() === 'w' && piece.search(/^b/) !== -1) {
-            return false;
-        }
-        if (this.game.turn() === 'b' && piece.search(/^w/) !== -1) {
-            return false;
-        }
-    }
-    
-    onDrop(source, target) {
-        // Make the move
-        const move = this.game.move({
-            from: source,
-            to: target,
-            promotion: 'q' // Always promote to queen for simplicity
+    updateBoard() {
+        // Clear all pieces
+        document.querySelectorAll('.square').forEach(square => {
+            square.innerHTML = '';
+            square.classList.remove('selected', 'highlight', 'last-move');
         });
         
-        // If the move is invalid, snap back
-        if (move === null) return 'snapback';
+        // Place pieces
+        Object.entries(this.currentPuzzle.position).forEach(([square, piece]) => {
+            if (piece) {
+                const squareElement = document.querySelector(`[data-square="${square}"]`);
+                if (squareElement) {
+                    squareElement.innerHTML = this.getPieceSymbol(piece);
+                    squareElement.dataset.piece = piece;
+                }
+            }
+        });
+    }
+    
+    getPieceSymbol(piece) {
+        const symbols = {
+            'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+            'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+        };
+        return symbols[piece] || '';
+    }
+    
+    onSquareClick(row, col) {
+        if (this.gameState !== 'playing') return;
         
+        const squareName = this.getSquareName(row, col);
+        const squareElement = document.querySelector(`[data-square="${squareName}"]`);
+        const piece = squareElement.dataset.piece;
+        
+        if (this.selectedSquare) {
+            // Try to make a move
+            this.attemptMove(this.selectedSquare, squareName);
+            this.clearSelection();
+        } else if (piece) {
+            // Select a piece
+            this.selectSquare(squareName);
+        }
+    }
+    
+    selectSquare(squareName) {
+        this.clearSelection();
+        this.selectedSquare = squareName;
+        const squareElement = document.querySelector(`[data-square="${squareName}"]`);
+        squareElement.classList.add('selected');
+    }
+    
+    clearSelection() {
+        document.querySelectorAll('.square').forEach(square => {
+            square.classList.remove('selected', 'highlight');
+        });
+        this.selectedSquare = null;
+    }
+    
+    attemptMove(from, to) {
         this.attempts++;
         this.updateAttempts();
         
-        // Check if this is part of the solution
-        const moveNotation = this.getMoveNotation(move);
-        const solutionIndex = this.attempts - 1;
-        
-        if (this.currentPuzzle.solution[solutionIndex] === moveNotation) {
-            // Correct move
-            this.highlightSquare(target, 'correct');
-            
-            // Check if puzzle is complete
-            if (solutionIndex === this.currentPuzzle.solution.length - 1) {
-                this.puzzleSolved();
-            }
+        // Check if this is the correct move
+        if (this.currentPuzzle.solution.includes(`${from}${to}`) || 
+            this.currentPuzzle.solution.includes(this.getMoveNotation(from, to))) {
+            this.correctMove(from, to);
         } else {
-            // Incorrect move
-            this.highlightSquare(target, 'incorrect');
-            this.game.undo();
-            this.board.position(this.game.fen());
+            this.incorrectMove(to);
         }
+    }
+    
+    correctMove(from, to) {
+        // Move the piece
+        const fromElement = document.querySelector(`[data-square="${from}"]`);
+        const toElement = document.querySelector(`[data-square="${to}"]`);
+        const piece = fromElement.dataset.piece;
         
-        return true;
-    }
-    
-    onSnapEnd() {
-        this.board.position(this.game.fen());
-    }
-    
-    getMoveNotation(move) {
-        // Convert move object to algebraic notation
-        if (move.flags.includes('c')) {
-            return 'O-O-O';
-        } else if (move.flags.includes('k')) {
-            return 'O-O';
-        } else {
-            let notation = '';
-            if (move.piece !== 'p') {
-                notation += move.piece.toUpperCase();
-            }
-            notation += move.from;
-            if (move.captured) {
-                notation += 'x';
-            }
-            notation += move.to;
-            if (move.promotion) {
-                notation += '=' + move.promotion.toUpperCase();
-            }
-            if (move.flags.includes('+')) {
-                notation += '+';
-            }
-            if (move.flags.includes('#')) {
-                notation += '#';
-            }
-            return notation;
+        toElement.innerHTML = this.getPieceSymbol(piece);
+        toElement.dataset.piece = piece;
+        fromElement.innerHTML = '';
+        fromElement.dataset.piece = '';
+        
+        // Highlight the move
+        fromElement.classList.add('last-move');
+        toElement.classList.add('last-move');
+        
+        // Check if puzzle is complete
+        if (this.attempts >= this.currentPuzzle.solution.length) {
+            this.puzzleSolved();
         }
     }
     
-    highlightSquare(square, type) {
-        const element = document.querySelector(`[data-square="${square}"]`);
-        if (element) {
-            element.classList.add(type === 'correct' ? 'correct-move' : 'incorrect-move');
-            setTimeout(() => {
-                element.classList.remove('correct-move', 'incorrect-move');
-            }, 600);
-        }
+    incorrectMove(to) {
+        const toElement = document.querySelector(`[data-square="${to}"]`);
+        toElement.classList.add('incorrect');
+        setTimeout(() => {
+            toElement.classList.remove('incorrect');
+        }, 1000);
+    }
+    
+    getMoveNotation(from, to) {
+        // Simple move notation for puzzle checking
+        return `${from}${to}`;
     }
     
     puzzleSolved() {
-        const timeElapsed = Date.now() - this.startTime;
-        const timeSeconds = Math.floor(timeElapsed / 1000);
+        this.gameState = 'solved';
         
         // Calculate points and ELO change
         const basePoints = this.currentPuzzle.reward;
-        const timeBonus = Math.max(0, 100 - timeSeconds);
         const hintPenalty = this.hintsUsed * 10;
-        const pointsEarned = Math.max(10, basePoints + timeBonus - hintPenalty);
+        const pointsEarned = Math.max(10, basePoints - hintPenalty);
         
         // ELO calculation (simplified)
-        const eloChange = this.calculateEloChange(this.currentPuzzle.elo, timeSeconds, this.attempts);
+        const eloChange = this.calculateEloChange(this.currentPuzzle.elo, this.attempts);
         
         // Update user stats
         this.userStats.points += pointsEarned;
         this.userStats.elo += eloChange;
         this.userStats.streak++;
         this.userStats.puzzlesSolved++;
-        this.userStats.totalTime += timeSeconds;
         
         // Save stats
         this.saveUserStats();
         
         // Show success modal
-        this.showGameOverModal(pointsEarned, eloChange, timeSeconds);
+        this.showGameOverModal(pointsEarned, eloChange);
         
         // Add reward to list
         this.addReward(`Puzzle solved! +${pointsEarned} points`);
         
         // Check for achievements
         this.checkAchievements();
+        
+        // Show next puzzle button
+        document.getElementById('nextPuzzleBtn').style.display = 'inline-flex';
     }
     
-    calculateEloChange(puzzleElo, timeSeconds, attempts) {
+    calculateEloChange(puzzleElo, attempts) {
         const expectedScore = 1 / (1 + Math.pow(10, (puzzleElo - this.userStats.elo) / 400));
         const actualScore = 1; // Solved the puzzle
         const kFactor = 32;
         
         let eloChange = Math.round(kFactor * (actualScore - expectedScore));
         
-        // Time bonus/penalty
-        if (timeSeconds < 30) eloChange += 5;
-        else if (timeSeconds > 120) eloChange -= 5;
-        
         // Attempt penalty
-        if (attempts > 3) eloChange -= 3;
+        if (attempts > 3) eloChange -= 5;
         
         return eloChange;
     }
     
-    showGameOverModal(pointsEarned, eloChange, timeSeconds) {
+    showGameOverModal(pointsEarned, eloChange) {
         const modal = document.getElementById('gameOverModal');
-        const timeStr = this.formatTime(timeSeconds);
         
-        document.getElementById('finalTime').textContent = timeStr;
         document.getElementById('pointsEarned').textContent = `+${pointsEarned}`;
         document.getElementById('eloChange').textContent = eloChange > 0 ? `+${eloChange}` : eloChange.toString();
         
@@ -343,13 +373,14 @@ class ChessPuzzleSimulator {
     }
     
     resetPuzzle() {
-        this.game.load(this.currentPuzzle.fen);
-        this.board.position(this.currentPuzzle.fen);
         this.attempts = 0;
         this.hintsUsed = 0;
-        this.startTime = Date.now();
+        this.selectedSquare = null;
+        this.gameState = 'playing';
         this.updateAttempts();
-        this.resetTimer();
+        this.updateBoard();
+        this.clearSelection();
+        document.getElementById('nextPuzzleBtn').style.display = 'none';
     }
     
     nextPuzzle() {
@@ -361,33 +392,7 @@ class ChessPuzzleSimulator {
         this.puzzleIndex = (this.puzzleIndex + 1) % this.getPuzzleDatabase().length;
         this.loadPuzzle();
         this.updateUI();
-    }
-    
-    startTimer() {
-        // Clear any existing timer
-        if (this.timer) {
-            clearInterval(this.timer);
-        }
-        
-        this.timer = setInterval(() => {
-            if (this.startTime) {
-                const elapsed = Date.now() - this.startTime;
-                const timerElement = document.getElementById('timer');
-                if (timerElement) {
-                    timerElement.textContent = this.formatTime(Math.floor(elapsed / 1000));
-                }
-            }
-        }, 1000);
-    }
-    
-    resetTimer() {
-        this.startTime = Date.now();
-    }
-    
-    formatTime(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        document.getElementById('nextPuzzleBtn').style.display = 'none';
     }
     
     updateAttempts() {
@@ -485,8 +490,5 @@ function nextPuzzle() {
 
 // Initialize the application when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit more to ensure all libraries are loaded
-    setTimeout(() => {
-        window.puzzleSimulator = new ChessPuzzleSimulator();
-    }, 200);
+    window.puzzleSimulator = new ChessPuzzleSimulator();
 });
