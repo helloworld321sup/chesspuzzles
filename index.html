@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Puzzle Simulator</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="logo">
+                    <i class="fas fa-chess"></i>
+                    Chess Puzzle Simulator
+                </h1>
+                <div class="user-stats">
+                    <div class="stat">
+                        <span class="stat-label">ELO</span>
+                        <span class="stat-value" id="userElo">1200</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Points</span>
+                        <span class="stat-value" id="userPoints">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Streak</span>
+                        <span class="stat-value" id="userStreak">0</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Puzzle Info Panel -->
+            <div class="puzzle-info">
+                <div class="puzzle-header">
+                    <h2 id="puzzleTitle">Puzzle #1</h2>
+                    <div class="puzzle-meta">
+                        <span class="difficulty" id="puzzleDifficulty">Intermediate</span>
+                        <span class="elo" id="puzzleElo">1500</span>
+                    </div>
+                </div>
+                <div class="puzzle-instructions">
+                    <p id="puzzleDescription">Find the best move to gain material or checkmate</p>
+                </div>
+                <div class="puzzle-stats">
+                    <div class="stat-item">
+                        <span class="label">Attempts:</span>
+                        <span id="attempts">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Time:</span>
+                        <span id="timer">00:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chess Board -->
+            <div class="board-container">
+                <div id="chessboard" class="chessboard"></div>
+                <div class="board-controls">
+                    <button id="hintBtn" class="btn btn-secondary">
+                        <i class="fas fa-lightbulb"></i>
+                        Hint
+                    </button>
+                    <button id="resetBtn" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i>
+                        Reset
+                    </button>
+                    <button id="nextPuzzleBtn" class="btn btn-primary" style="display: none;">
+                        <i class="fas fa-forward"></i>
+                        Next Puzzle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Rewards Panel -->
+            <div class="rewards-panel">
+                <h3>Recent Rewards</h3>
+                <div id="rewardsList" class="rewards-list">
+                    <div class="reward-item">
+                        <i class="fas fa-star"></i>
+                        <span>Welcome! +100 points</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Achievement Modal -->
+        <div id="achievementModal" class="modal">
+            <div class="modal-content">
+                <div class="achievement">
+                    <i class="fas fa-trophy"></i>
+                    <h3 id="achievementTitle">Achievement Unlocked!</h3>
+                    <p id="achievementDescription">You've completed your first puzzle!</p>
+                    <div class="achievement-reward">
+                        <span>+50 points</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="closeAchievementModal()">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="gameOverModal" class="modal">
+            <div class="modal-content">
+                <div class="game-over">
+                    <i class="fas fa-check-circle success"></i>
+                    <h3 id="gameOverTitle">Puzzle Solved!</h3>
+                    <p id="gameOverDescription">Excellent work!</p>
+                    <div class="game-over-stats">
+                        <div class="stat">
+                            <span class="label">Time:</span>
+                            <span id="finalTime">00:00</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Points Earned:</span>
+                            <span id="pointsEarned">+50</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">ELO Change:</span>
+                            <span id="eloChange">+15</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="nextPuzzle()">Next Puzzle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0-beta.3/chess.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard-1.0.0.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
