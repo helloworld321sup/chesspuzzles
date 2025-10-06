@@ -32,10 +32,12 @@ class ChessPuzzleSimulator {
     }
     
     init() {
+        console.log('Initializing Chess Puzzle Simulator...');
         this.createChessboard();
         this.setupEventListeners();
         this.loadPuzzle();
         this.updateUI();
+        console.log('Initialization complete');
     }
     
     createChessboard() {
@@ -97,16 +99,16 @@ class ChessPuzzleSimulator {
                 return;
             }
             
-            // Fetch new puzzles from API
-            await this.fetchPuzzles();
+            // Load fallback puzzles first to ensure we always have content
+            this.puzzleCache[this.currentDifficulty] = this.getFallbackPuzzles(this.currentDifficulty);
+            this.currentPuzzle = this.puzzleCache[this.currentDifficulty][this.puzzleIndex % this.puzzleCache[this.currentDifficulty].length];
+            this.displayPuzzle();
             
-            if (this.puzzleCache[this.currentDifficulty].length > 0) {
-                this.currentPuzzle = this.puzzleCache[this.currentDifficulty][0];
-                this.displayPuzzle();
-            } else {
-                // Fallback to local puzzles if API fails
-                this.loadFallbackPuzzle();
-            }
+            // Try to fetch new puzzles from API in background
+            this.fetchPuzzles().catch(error => {
+                console.log('API fetch failed, using fallback puzzles:', error);
+            });
+            
         } catch (error) {
             console.error('Error loading puzzle:', error);
             this.loadFallbackPuzzle();
@@ -212,6 +214,16 @@ class ChessPuzzleSimulator {
                     fen: 'r1bqkb1r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 6 4',
                     solution: ['Bxf7+'],
                     reward: 50
+                },
+                {
+                    id: 'tactics-1',
+                    title: "Basic Tactics",
+                    difficulty: "beginner",
+                    elo: 1050,
+                    description: "Find the winning move",
+                    fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
+                    solution: ['Bc4'],
+                    reward: 50
                 }
             ],
             intermediate: [
@@ -234,6 +246,16 @@ class ChessPuzzleSimulator {
                     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
                     solution: ['Qh8+'],
                     reward: 80
+                },
+                {
+                    id: 'tactics-2',
+                    title: "Intermediate Tactics",
+                    difficulty: "intermediate",
+                    elo: 1450,
+                    description: "Find the best move",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
+                    solution: ['Bxf7+'],
+                    reward: 80
                 }
             ],
             advanced: [
@@ -246,17 +268,37 @@ class ChessPuzzleSimulator {
                     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
                     solution: ['Bxh7+'],
                     reward: 120
+                },
+                {
+                    id: 'advanced-1',
+                    title: "Advanced Tactics",
+                    difficulty: "advanced",
+                    elo: 1750,
+                    description: "Find the winning combination",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
+                    solution: ['Nxe5'],
+                    reward: 120
                 }
             ],
             expert: [
                 {
-                    id: 'zugzwang-1',
-                    title: "Zugzwang",
+                    id: 'expert-1',
+                    title: "Expert Tactics",
                     difficulty: "expert",
                     elo: 2100,
-                    description: "Put your opponent in zugzwang",
-                    fen: '8/8/8/8/8/8/8/8 w - - 0 1',
-                    solution: ['Kf1'],
+                    description: "Find the deep combination",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
+                    solution: ['Bxf7+'],
+                    reward: 200
+                },
+                {
+                    id: 'expert-2',
+                    title: "Master Level",
+                    difficulty: "expert",
+                    elo: 2200,
+                    description: "Find the winning move",
+                    fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4',
+                    solution: ['Qh8+'],
                     reward: 200
                 }
             ]
@@ -272,6 +314,8 @@ class ChessPuzzleSimulator {
     }
     
     displayPuzzle() {
+        console.log('Displaying puzzle:', this.currentPuzzle);
+        
         // Update UI
         document.getElementById('puzzleTitle').textContent = this.currentPuzzle.title;
         document.getElementById('puzzleDifficulty').textContent = this.currentPuzzle.difficulty;
@@ -289,9 +333,12 @@ class ChessPuzzleSimulator {
     }
     
     updateBoard() {
+        console.log('Updating board with FEN:', this.currentPuzzle.fen);
+        
         // Clear all pieces
         document.querySelectorAll('.square').forEach(square => {
             square.innerHTML = '';
+            square.dataset.piece = '';
             square.classList.remove('selected', 'highlight', 'last-move');
         });
         
@@ -300,19 +347,25 @@ class ChessPuzzleSimulator {
     }
     
     parseFEN(fen) {
+        console.log('Parsing FEN:', fen);
         const parts = fen.split(' ');
         const boardPart = parts[0];
         const ranks = boardPart.split('/');
         
+        console.log('Ranks:', ranks);
+        
         for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
             const rank = ranks[rankIndex];
             let fileIndex = 0;
+            
+            console.log(`Processing rank ${rankIndex}:`, rank);
             
             for (let char of rank) {
                 if (isNaN(char)) {
                     // It's a piece
                     const squareName = this.getSquareName(rankIndex, fileIndex);
                     const squareElement = document.querySelector(`[data-square="${squareName}"]`);
+                    console.log(`Placing piece ${char} on ${squareName}`);
                     if (squareElement) {
                         squareElement.innerHTML = this.getPieceSymbol(char);
                         squareElement.dataset.piece = char;
@@ -320,7 +373,9 @@ class ChessPuzzleSimulator {
                     fileIndex++;
                 } else {
                     // It's a number (empty squares)
-                    fileIndex += parseInt(char);
+                    const emptySquares = parseInt(char);
+                    console.log(`Skipping ${emptySquares} empty squares`);
+                    fileIndex += emptySquares;
                 }
             }
         }
