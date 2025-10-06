@@ -32,12 +32,10 @@ class ChessPuzzleSimulator {
     }
     
     init() {
-        console.log('Initializing Chess Puzzle Simulator...');
         this.createChessboard();
         this.setupEventListeners();
         this.loadPuzzle();
         this.updateUI();
-        console.log('Initialization complete');
     }
     
     createChessboard() {
@@ -196,8 +194,8 @@ class ChessPuzzleSimulator {
         const allPuzzles = [
             // BEGINNER PUZZLES (800-1200 ELO) - 250 puzzles
             { id: 'puzzle-1', title: "Fork Attack", difficulty: "beginner", elo: 850, description: "Find the fork that wins material", fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4', solution: ['Nxe5'], reward: 50 },
-            { id: 'puzzle-2', title: "Pin Tactics", difficulty: "beginner", elo: 920, description: "Use a pin to win material", fen: 'r1bqkb1r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 6 4', solution: ['Bxf7+'], reward: 50 },
-            { id: 'puzzle-3', title: "Basic Checkmate", difficulty: "beginner", elo: 880, description: "Find the checkmate in one", fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4', solution: ['Qh5+'], reward: 50 },
+            { id: 'puzzle-2', title: "Pin Tactics", difficulty: "beginner", elo: 920, description: "Use a pin to win material", fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', solution: ['Bc4'], reward: 50 },
+            { id: 'puzzle-3', title: "Basic Checkmate", difficulty: "beginner", elo: 880, description: "Find the checkmate in one", fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', solution: ['e4'], reward: 50 },
             { id: 'puzzle-4', title: "Skewer Attack", difficulty: "beginner", elo: 950, description: "Find the skewer that wins material", fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4', solution: ['Bd5+'], reward: 50 },
             { id: 'puzzle-5', title: "Double Attack", difficulty: "beginner", elo: 900, description: "Find the double attack", fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4', solution: ['Nf7+'], reward: 50 },
             { id: 'puzzle-6', title: "Knight Fork", difficulty: "beginner", elo: 870, description: "Find the knight fork", fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 4', solution: ['Nxe5'], reward: 50 },
@@ -261,8 +259,6 @@ class ChessPuzzleSimulator {
     }
     
     displayPuzzle() {
-        console.log('Displaying puzzle:', this.currentPuzzle);
-        
         // Update UI
         document.getElementById('puzzleTitle').textContent = this.currentPuzzle.title;
         document.getElementById('puzzleDifficulty').textContent = this.currentPuzzle.difficulty;
@@ -280,8 +276,6 @@ class ChessPuzzleSimulator {
     }
     
     updateBoard() {
-        console.log('Updating board with FEN:', this.currentPuzzle.fen);
-        
         // Clear all pieces
         document.querySelectorAll('.square').forEach(square => {
             square.innerHTML = '';
@@ -294,25 +288,19 @@ class ChessPuzzleSimulator {
     }
     
     parseFEN(fen) {
-        console.log('Parsing FEN:', fen);
         const parts = fen.split(' ');
         const boardPart = parts[0];
         const ranks = boardPart.split('/');
         
-        console.log('Ranks:', ranks);
-        
         for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
             const rank = ranks[rankIndex];
             let fileIndex = 0;
-            
-            console.log(`Processing rank ${rankIndex}:`, rank);
             
             for (let char of rank) {
                 if (isNaN(char)) {
                     // It's a piece
                     const squareName = this.getSquareName(rankIndex, fileIndex);
                     const squareElement = document.querySelector(`[data-square="${squareName}"]`);
-                    console.log(`Placing piece ${char} on ${squareName}`);
                     if (squareElement) {
                         squareElement.innerHTML = this.getPieceSymbol(char);
                         squareElement.dataset.piece = char;
@@ -321,7 +309,6 @@ class ChessPuzzleSimulator {
                 } else {
                     // It's a number (empty squares)
                     const emptySquares = parseInt(char);
-                    console.log(`Skipping ${emptySquares} empty squares`);
                     fileIndex += emptySquares;
                 }
             }
